@@ -2,6 +2,10 @@ use std::io::{self, Read};
 
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 
+/*
+Ctrl-Q: ASCII 17
+*/
+
 pub struct Editor {}
 
 impl Editor {
@@ -23,7 +27,7 @@ impl Editor {
                         println!("Binary: {0:08b} ASCII: {0:#03} Character: {1:#?}\r", b, c);
                     }
 
-                    if c == 'q' {
+                    if b == 17 {
                         break;
                     }
                 }

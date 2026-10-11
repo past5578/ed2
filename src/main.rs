@@ -1,9 +1,9 @@
+use std::io;
+
 use editor::Editor;
 
 mod editor;
 
-fn main() {
-    let editor = Editor::default();
-
-    editor.run();
+fn main() -> io::Result<()> {
+    Editor::default().run()
 }

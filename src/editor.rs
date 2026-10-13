@@ -6,7 +6,6 @@ use cursor_pos::{CursorPos, Direction};
 use terminal::Terminal;
 
 mod cursor_pos;
-mod raw_mode;
 mod terminal;
 
 pub struct Editor {

@@ -4,10 +4,25 @@ use crossterm::{
     cursor::{Hide, MoveTo, Show},
     execute, queue,
     style::Print,
-    terminal::{Clear, ClearType},
+    terminal::{Clear, ClearType, disable_raw_mode, enable_raw_mode},
 };
 
-use super::raw_mode::RawMode;
+struct RawMode;
+
+impl RawMode {
+    fn enter() -> io::Result<Self> {
+        enable_raw_mode()?;
+
+        Ok(Self)
+    }
+}
+
+impl Drop for RawMode {
+    fn drop(&mut self) {
+        let _ = disable_raw_mode();
+        let _ = execute!(io::stdout(), Show);
+    }
+}
 
 pub(super) struct Terminal {
     _raw_mode_guard: RawMode,

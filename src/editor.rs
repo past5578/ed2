@@ -1,57 +1,60 @@
-use std::io::{self, Write};
+use std::io;
 
-use crossterm::cursor::{Hide, MoveTo, Show};
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers, read};
-use crossterm::style::Print;
-use crossterm::terminal::{Clear, ClearType};
-use crossterm::{execute, queue, terminal};
 
 use cursor_pos::{CursorPos, Direction};
-use raw_mode::RawMode;
+use terminal::Terminal;
 
 mod cursor_pos;
 mod raw_mode;
+mod terminal;
 
-#[derive(Default)]
 pub struct Editor {
     should_quit: bool,
+    terminal: Terminal,
     cursor_pos: CursorPos,
 }
 
 impl Editor {
+    pub fn new() -> io::Result<Self> {
+        Ok(Editor {
+            should_quit: false,
+            terminal: Terminal::new()?,
+            cursor_pos: CursorPos::default(),
+        })
+    }
+
     fn render(&self) -> io::Result<()> {
-        let (width, height) = terminal::size()?;
+        let (width, height) = self.terminal.size()?;
 
-        let mut stdout = io::stdout();
-
-        queue!(stdout, Hide)?;
+        self.terminal.hide_cursor()?;
 
         for row in 0..height {
-            queue!(stdout, MoveTo(0, row))?;
+            self.terminal.move_cursor_to(0, row)?;
 
             let mut text = self.get_row_content(row, width, height);
-            text.truncate(width as usize);
+            text.truncate(width);
 
-            queue!(stdout, Print(text), Clear(ClearType::UntilNewLine))?;
+            self.terminal.print(&text)?;
+            self.terminal.clear_until_new_line()?;
         }
 
-        queue!(
-            stdout,
-            MoveTo(self.cursor_pos.x as u16, self.cursor_pos.y as u16),
-            Show
-        )?;
+        self.terminal
+            .move_cursor_to(self.cursor_pos.x, self.cursor_pos.y)?;
 
-        stdout.flush()?;
+        self.terminal.show_cursor()?;
+
+        self.terminal.flush()?;
 
         Ok(())
     }
 
-    fn get_row_content(&self, row: u16, width: u16, height: u16) -> String {
+    fn get_row_content(&self, row: usize, width: usize, height: usize) -> String {
         let welcome_row = height / 3;
 
         if row == welcome_row {
             let message = "ed2 0.1.0";
-            let padding = (width as usize)
+            let padding = width
                 .saturating_sub(message.chars().count())
                 .saturating_sub(1);
 
@@ -62,7 +65,7 @@ impl Editor {
     }
 
     fn handle_key_event(&mut self, key_event: KeyEvent) -> io::Result<()> {
-        let (width, height) = terminal::size()?;
+        let (width, height) = self.terminal.size()?;
 
         let code = key_event.code;
         let modifiers = key_event.modifiers;
@@ -93,10 +96,7 @@ impl Editor {
     }
 
     pub fn run(&mut self) -> io::Result<()> {
-        let mut stdout = io::stdout();
-        let _guard = RawMode::enter()?;
-
-        execute!(stdout, Clear(ClearType::All))?;
+        self.terminal.clear_screen()?;
 
         while !self.should_quit {
             self.render()?;

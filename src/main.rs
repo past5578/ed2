@@ -5,5 +5,7 @@ use editor::Editor;
 mod editor;
 
 fn main() -> io::Result<()> {
-    Editor::default().run()
+    let mut editor = Editor::new()?;
+
+    editor.run()
 }
